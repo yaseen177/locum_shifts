@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <span class="navbar-text">Hello, <strong>Guest!</strong> 👋</span>
+        </div>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-center">Register</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="post" class="card p-4 shadow-lg">
+                <div class="mb-3">
+                    <label class="form-label">First Name:</label>
+                    <input type="text" name="first_name" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Surname:</label>
+                    <input type="text" name="surname" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Username:</label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email:</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Phone Number:</label>
+                    <select name="country_code" class="form-select">
+                        <option value="+44">🇬🇧 +44 (UK)</option>
+                        <option value="+1">🇺🇸 +1 (USA)</option>
+                        <option value="+91">🇮🇳 +91 (India)</option>
+                        <option value="+61">🇦🇺 +61 (Australia)</option>
+                        <option value="+33">🇫🇷 +33 (France)</option>
+                        <!-- Add more countries as needed -->
+                    </select>
+                    <input type="text" name="phone_number" class="form-control mt-2" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Address Line 1:</label>
+                    <input type="text" name="address_line1" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Address Line 2 (Optional):</label>
+                    <input type="text" name="address_line2" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">City/Town:</label>
+                    <input type="text" name="city" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">County (Optional):</label>
+                    <input type="text" name="county" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Country:</label>
+                    <select name="country" class="form-select">
+                        <option value="United Kingdom" selected>🇬🇧 United Kingdom</option>
+                        <option value="United States">🇺🇸 United States</option>
+                        <option value="India">🇮🇳 India</option>
+                        <option value="Australia">🇦🇺 Australia</option>
+                        <option value="France">🇫🇷 France</option>
+                        <!-- Add more countries as needed -->
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Postcode:</label>
+                    <input type="text" name="postcode" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password:</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">Register</button>
+
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="/login">Login here</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Footer -->
+<footer class="bg-light text-center text-muted mt-5 py-3">
+    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

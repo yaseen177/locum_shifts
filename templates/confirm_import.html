@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirm Import</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <span class="navbar-text">Hello, <strong>{{ current_user.first_name }}</strong>! 👋</span>
+            <div class="ms-auto">
+                <a href="/logout" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <h2 class="text-center">Confirm Import</h2>
+    <p class="text-center text-muted">Review your shifts before finalizing the import.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="table-responsive card p-4 shadow-lg">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Company</th>
+                    <th>Town</th>
+                    <th>Postcode</th>
+                    <th>Booking Source</th>
+                    <th>Rate (GBP)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shift in mapped_data %}
+                <tr {% if not shift['shift_date'] %}class="table-danger"{% endif %}>
+                    <td>
+                        {% if shift['shift_date'] %}
+                            {{ shift['shift_date'] }}
+                        {% else %}
+                            <span class="text-danger">Missing Date</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ shift['start_time'] }}</td>
+                    <td>{{ shift['end_time'] }}</td>
+                    <td>{{ shift['company'] }}</td>
+                    <td>{{ shift['town'] }}</td>
+                    <td>{{ shift['postcode'] }}</td>
+                    <td>{{ shift['booking_source'] }}</td>
+                    <td>£{{ "%.2f"|format(shift['rate']) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="post" class="mt-4">
+        <div class="d-flex justify-content-between">
+            <a href="/import_shifts" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-success">Confirm Import</button>
+        </div>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Footer -->
+<footer class="bg-light text-center text-muted mt-5 py-3">
+    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

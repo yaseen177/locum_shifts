@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shift Details</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="container mt-4">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Locum Shifts</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/monthly_earnings">Monthly Earnings</a></li>
+          <li class="nav-item"><a class="nav-link" href="/deleted_shifts">Deleted Shifts</a></li>
+        </ul>
+      </div>
+      <div class="ms-auto">
+        <a href="/profile" class="btn btn-primary">Edit Profile</a>
+        <a href="/logout" class="btn btn-danger">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <h3 class="text-center">Shift Details</h3>
+
+  <!-- Editable Shift Date & Time Card -->
+  <div class="row g-4 mt-3">
+    <div class="col-md-6">
+      <div class="card p-4 shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Shift Date & Time</h5>
+          <button class="btn btn-link" onclick="toggleEdit('timeCard')">
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="timeCard-view">
+            <p><strong>Date:</strong> {{ shift['shift_date'] }}</p>
+            <p><strong>Start Time:</strong> {{ shift['start_time'] }}</p>
+            <p><strong>End Time:</strong> {{ shift['end_time'] }}</p>
+          </div>
+          <div id="timeCard-edit" style="display: none;">
+            <form action="/shift/{{ shift['id'] }}/update_time" method="post">
+              <div class="mb-3">
+                <label class="form-label">Shift Date:</label>
+                <input type="date" name="shift_date" class="form-control" value="{{ shift['shift_date'] }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Start Time:</label>
+                <input type="time" name="start_time" class="form-control" value="{{ shift['start_time'] }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">End Time:</label>
+                <input type="time" name="end_time" class="form-control" value="{{ shift['end_time'] }}">
+              </div>
+              <button type="submit" class="btn btn-success">Update Time</button>
+              <button type="button" class="btn btn-secondary" onclick="toggleEdit('timeCard', true)">Cancel</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editable Location Card -->
+    <div class="col-md-6">
+      <div class="card p-4 shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5>Location</h5>
+          <button class="btn btn-link" onclick="toggleEdit('locationCard')">
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="locationCard-view">
+            <p><strong>Company:</strong> <span id="companyDisplay">{{ shift['company'] }}</span></p>
+            <p><strong>Town:</strong> {{ shift['town'] }}</p>
+            <p><strong>Postcode:</strong> {{ shift['postcode'] }}</p>
+            <p><strong>Booking Source:</strong> <span id="bookingSourceDisplay">{{ shift['booking_source'] }}</span></p>
+          </div>
+          <div id="locationCard-edit" style="display: none;">
+            <form action="/shift/{{ shift['id'] }}/update_location" method="post">
+              <div class="mb-3">
+                <label class="form-label">Company:</label>
+                <select name="company" class="form-control" id="companySelect" onchange="toggleOtherField('companySelect', 'companyOther')">
+                  <option value="VISION EXPRESS" {% if shift['company'] == 'VISION EXPRESS' %}selected{% endif %}>VISION EXPRESS</option>
+                  <option value="SPECSAVERS" {% if shift['company'] == 'SPECSAVERS' %}selected{% endif %}>SPECSAVERS</option>
+                  <option value="SCRIVENS" {% if shift['company'] == 'SCRIVENS' %}selected{% endif %}>SCRIVENS</option>
+                  <option value="ASDA" {% if shift['company'] == 'ASDA' %}selected{% endif %}>ASDA</option>
+                  <option value="OTHER" {% if shift['company'] not in ['VISION EXPRESS', 'SPECSAVERS', 'SCRIVENS', 'ASDA'] %}selected{% endif %}>Other</option>
+                </select>
+                <input type="text" name="companyOther" id="companyOther" class="form-control mt-2" placeholder="Enter Company Name"
+                      {% if shift['company'] not in ['VISION EXPRESS', 'SPECSAVERS', 'SCRIVENS', 'ASDA'] %}
+                      value="{{ shift['company'] }}"
+                      {% else %}style="display: none;"{% endif %}>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Town:</label>
+                <input type="text" name="town" class="form-control" value="{{ shift['town'] }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Postcode:</label>
+                <input type="text" name="postcode" class="form-control" value="{{ shift['postcode'] }}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Booking Source:</label>
+                <select name="booking_source" class="form-control" id="bookingSourceSelect" onchange="toggleOtherField('bookingSourceSelect', 'bookingSourceOther')">
+                  <option value="VISION EXPRESS" {% if shift['booking_source'] == 'VISION EXPRESS' %}selected{% endif %}>VISION EXPRESS</option>
+                  <option value="LOCATE A LOCUM" {% if shift['booking_source'] == 'LOCATE A LOCUM' %}selected{% endif %}>LOCATE A LOCUM</option>
+                  <option value="TEAM LOCUM" {% if shift['booking_source'] == 'TEAM LOCUM' %}selected{% endif %}>TEAM LOCUM</option>
+                  <option value="DIRECT" {% if shift['booking_source'] == 'DIRECT' %}selected{% endif %}>DIRECT</option>
+                  <option value="OTHER" {% if shift['booking_source'] not in ['VISION EXPRESS', 'LOCATE A LOCUM', 'TEAM LOCUM', 'DIRECT'] %}selected{% endif %}>Other</option>
+                </select>
+                <input type="text" name="bookingSourceOther" id="bookingSourceOther" class="form-control mt-2" placeholder="Enter Booking Source"
+                      {% if shift['booking_source'] not in ['VISION EXPRESS', 'LOCATE A LOCUM', 'TEAM LOCUM', 'DIRECT'] %}
+                      value="{{ shift['booking_source'] }}"
+                      {% else %}style="display: none;"{% endif %}>
+              </div>
+              <button type="submit" class="btn btn-success">Update Location</button>
+              <button type="button" class="btn btn-secondary" onclick="toggleEdit('locationCard', true)">Cancel</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Editable Rate & Hourly Calculation Card -->
+  <div class="col-md-6">
+    <div class="card p-4 shadow-lg">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Rate & Hourly Calculation</h5>
+        <button class="btn btn-link" onclick="toggleEdit('rateCard')">
+          <i class="fa-solid fa-pencil"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="rateCard-view">
+          <p><strong>Rate (per shift):</strong> £{{ shift['rate'] }}</p>
+          <p><strong>Hourly Rate:</strong> £<span id="hourlyRateView">{{ "{:.2f}".format(hourly_rate) }}</span></p>
+        </div>
+        <div id="rateCard-edit" style="display: none;">
+          <form action="/shift/{{ shift['id'] }}/update_rate" method="post">
+            <div class="mb-3">
+              <label class="form-label">Rate (per shift):</label>
+              <input type="number" step="0.01" name="rate" class="form-control" 
+                    value="{{ shift['rate'] }}" id="rateInput" 
+                    oninput="calculateHourlyRate()">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Hourly Rate (Auto-Calculated):</label>
+              <input type="text" class="form-control" id="hourlyRateDisplay" readonly>
+            </div>
+            <button type="submit" class="btn btn-success">Update Rate</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleEdit('rateCard', true)">Cancel</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editable Status Card -->
+  <div class="col-md-6">
+    <div class="card p-4 shadow-lg" id="statusCardContainer">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Shift Status</h5>
+        <button class="btn btn-link" onclick="toggleEdit('statusCard')">
+          <i class="fa-solid fa-pencil"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="statusCard-view">
+          <p><strong>Status:</strong> <span id="statusDisplay">{{ shift['status'] }}</span></p>
+          {% if shift['status'] == 'COMPLETED' %}
+            <p><strong>Were you on time?</strong> {{ "Yes" if shift['on_time'] else "No, " ~ shift['minutes_late'] ~ " minutes late" }}</p>
+          {% endif %}
+        </div>
+        <div id="statusCard-edit" style="display: none;">
+          <form action="/shift/{{ shift['id'] }}/update_status" method="post">
+            <div class="mb-3">
+              <label class="form-label">Shift Status:</label>
+              <select name="status" class="form-control" id="statusSelect" onchange="updateCardColor(); toggleOnTimeField();">
+                <option value="PENDING" {% if shift['status'] == 'PENDING' %}selected{% endif %}>PENDING</option>
+                <option value="BOOKED" {% if shift['status'] == 'BOOKED' %}selected{% endif %}>BOOKED</option>
+                <option value="COMPLETED" {% if shift['status'] == 'COMPLETED' %}selected{% endif %}>COMPLETED</option>
+              </select>
+            </div>
+            <div id="onTimeSection" class="mb-3" style="display: none;">
+              <label class="form-label">Were you on time?</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="on_time" id="onTimeYes" value="yes" checked onclick="toggleLateInput(false)">
+                <label class="form-check-label" for="onTimeYes">Yes</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="on_time" id="onTimeNo" value="no" onclick="toggleLateInput(true)">
+                <label class="form-check-label" for="onTimeNo">No</label>
+              </div>
+            </div>
+            <div id="lateMinutesSection" class="mb-3" style="display: none;">
+              <label class="form-label">How many minutes late?</label>
+              <input type="number" name="minutes_late" id="minutesLateInput" class="form-control" min="1">
+            </div>
+            <button type="submit" class="btn btn-success">Update Status</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleEdit('statusCard', true)">Cancel</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JavaScript -->
+    <script>
+      function toggleEdit(cardId, cancel = false) {
+        let viewDiv = document.getElementById(cardId + "-view");
+        let editDiv = document.getElementById(cardId + "-edit");
+    
+        if (cancel) {
+          editDiv.querySelectorAll("input, select").forEach(input => input.value = input.defaultValue);
+          toggleOnTimeField();  // Reset visibility of "Were you on time?" section
+          updateCardColor(); // Reset the card color on cancel
+        }
+    
+        if (viewDiv.style.display === "none") {
+          viewDiv.style.display = "block";
+          editDiv.style.display = "none";
+        } else {
+          viewDiv.style.display = "none";
+          editDiv.style.display = "block";
+        }
+      }
+    
+      function toggleOnTimeField() {
+        let status = document.getElementById("statusSelect").value;
+        let onTimeSection = document.getElementById("onTimeSection");
+        let lateMinutesSection = document.getElementById("lateMinutesSection");
+    
+        if (status === "COMPLETED") {
+          onTimeSection.style.display = "block";
+          toggleLateInput(false); // Default to "Yes" on time
+        } else {
+          onTimeSection.style.display = "none";
+          lateMinutesSection.style.display = "none";
+        }
+      }
+    
+      function toggleLateInput(show) {
+        let lateMinutesSection = document.getElementById("lateMinutesSection");
+        let lateMinutesInput = document.getElementById("minutesLateInput");
+    
+        if (show) {
+          lateMinutesSection.style.display = "block";
+          lateMinutesInput.required = true;
+        } else {
+          lateMinutesSection.style.display = "none";
+          lateMinutesInput.value = "";
+          lateMinutesInput.required = false;
+        }
+      }
+    
+      function updateCardColor() {
+        let status = document.getElementById("statusSelect").value;
+        let statusCard = document.getElementById("statusCardContainer");
+    
+        // Remove previous color classes
+        statusCard.classList.remove("bg-danger", "bg-warning", "bg-success", "text-white");
+    
+        if (status === "PENDING") {
+          statusCard.classList.add("bg-danger-subtle", "text-dark");
+        } else if (status === "BOOKED") {
+          statusCard.classList.add("bg-warning-subtle", "text-dark");
+        } else if (status === "COMPLETED") {
+          statusCard.classList.add("bg-success-subtle", "text-dark");
+        }
+      }
+    
+      document.addEventListener("DOMContentLoaded", function() {
+        updateCardColor(); // Ensure correct color loads when the page opens
+        toggleOnTimeField();
+      });
+    </script>
+  
+  
+
+  <!-- Footer -->
+  <footer class="bg-light text-center text-muted mt-5 py-3">
+    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
+  </footer>
+</body>
+</html>

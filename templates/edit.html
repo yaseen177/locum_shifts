@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Shift</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container-fluid">
+            <span class="navbar-text">Hello, <strong>{{ current_user.first_name }}</strong>! 👋</span>
+            <div class="ms-auto">
+                <a href="/profile" class="btn btn-primary">Edit Profile</a>
+                <a href="/logout" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <h2 class="text-center">Edit Shift</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="post" class="card p-4 shadow-lg">
+        <div class="mb-3">
+            <label class="form-label">Date of Shift:</label>
+            <input type="date" name="shift_date" value="{{ shift['shift_date'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Start Time:</label>
+            <input type="time" name="start_time" value="{{ shift['start_time'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">End Time:</label>
+            <input type="time" name="end_time" value="{{ shift['end_time'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Company:</label>
+            <input type="text" name="company" value="{{ shift['company'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Town:</label>
+            <input type="text" name="town" value="{{ shift['town'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Postcode:</label>
+            <input type="text" name="postcode" value="{{ shift['postcode'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Booking Source:</label>
+            <input type="text" name="booking_source" value="{{ shift['booking_source'] }}" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Rate (GBP):</label>
+            <input type="number" step="0.01" name="rate" value="{{ shift['rate'] }}" class="form-control" required>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between">
+            <a href="/" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-warning">Save Changes</button>
+        </div>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Footer -->
+<footer class="bg-light text-center text-muted mt-5 py-3">
+    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
