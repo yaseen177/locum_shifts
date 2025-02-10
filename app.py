@@ -259,42 +259,50 @@ def monthly_earnings():
     return render_template("monthly_earnings.html")
 
 
-@app.route('/add', methods=('GET', 'POST'))
+@app.route('/add', methods=['GET', 'POST'])
 @login_required
 def add():
     if request.method == 'POST':
-        shift_date = request.form['shift_date']
-        start_time = request.form['start_time']
-        end_time = request.form['end_time']
-        company = request.form['company']
-        other_company = request.form.get('other_company', None)
-        town = request.form['town']
-        postcode = request.form['postcode']
-        booking_source = request.form['booking_source']
-        other_booking_source = request.form.get('other_booking_source', None)
-        rate = float(request.form['rate'])
+        shift_date = request.form.get("shift_date")
+        start_time = request.form.get("start_time")
+        end_time = request.form.get("end_time")
+        company = request.form.get("company")
+        # If company is "OTHER", use the custom input:
+        company_other = request.form.get("company_other").strip() if request.form.get("company_other") else ""
+        if company == "OTHER" and company_other:
+            company = company_other
 
-        if company == "OTHER" and other_company:
-            company = other_company
-        if booking_source == "OTHER" and other_booking_source:
-            booking_source = other_booking_source
+        town = request.form.get("town")
+        postcode = request.form.get("postcode")
+        booking_source = request.form.get("booking_source")
+        # If booking source is "OTHER", use the custom input:
+        booking_source_other = request.form.get("booking_source_other").strip() if request.form.get("booking_source_other") else ""
+        if booking_source == "OTHER" and booking_source_other:
+            booking_source = booking_source_other
 
-        try:
-            conn = get_db_connection()
-            conn.execute('''
-                INSERT INTO shifts (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, current_user.id))
-            conn.commit()
-        except sqlite3.OperationalError as e:
-            print("Database is locked error:", e)  # Debugging log
-            flash("Database error, please try again later.", "danger")
-        finally:
-            conn.close()  # Ensure the connection is closed
+        rate = request.form.get("rate")
+        status = request.form.get("status")
 
-        return redirect(url_for('index'))
+        # --- Validation Rule: If company is VISION EXPRESS then booking_source must be VISION EXPRESS (and vice versa) ---
+        if company == "VISION EXPRESS" and booking_source != "VISION EXPRESS":
+            flash("For VISION EXPRESS company, the booking source must also be VISION EXPRESS.", "danger")
+            return redirect(url_for("add"))
+        if booking_source == "VISION EXPRESS" and company != "VISION EXPRESS":
+            flash("For VISION EXPRESS booking source, the company must also be VISION EXPRESS.", "danger")
+            return redirect(url_for("add"))
+        # -------------------------------------------------------------------------------
 
-    return render_template('add.html')
+        # (Add any further validation and then insert the shift into the database)
+        conn = get_db_connection()
+        conn.execute(
+            "INSERT INTO shifts (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, status)
+        )
+        conn.commit()
+        conn.close()
+        flash("New shift added successfully!", "success")
+        return redirect(url_for("index"))
+    return render_template("add.html")
 
 @app.route('/shift/<int:shift_id>')
 @login_required
@@ -469,44 +477,56 @@ def uploaded_file(filename):
 
 
 
-@app.route('/edit/<int:id>', methods=('GET', 'POST'))
+@app.route('/shift/<int:shift_id>/edit', methods=['GET', 'POST'])
 @login_required
-def edit(id):
+def edit(shift_id):
     conn = get_db_connection()
-    shift = conn.execute('SELECT * FROM shifts WHERE id = ? AND user_id = ?', (id, current_user.id)).fetchone()
-
-    if shift is None:
-        flash('You are not authorized to edit this shift.', 'danger')
-        return redirect(url_for('index'))
-
+    shift = conn.execute("SELECT * FROM shifts WHERE id = ? AND user_id = ?", (shift_id, current_user.id)).fetchone()
+    if not shift:
+        conn.close()
+        flash("Shift not found!", "danger")
+        return redirect(url_for("index"))
+    
     if request.method == 'POST':
-        shift_date = request.form['shift_date']
-        start_time = request.form['start_time']
-        end_time = request.form['end_time']
-        company = request.form['company']
-        other_company = request.form.get('other_company', None)
-        town = request.form['town']
-        postcode = request.form['postcode']
-        booking_source = request.form['booking_source']
-        other_booking_source = request.form.get('other_booking_source', None)
-        rate = float(request.form['rate'])
+        shift_date = request.form.get("shift_date")
+        start_time = request.form.get("start_time")
+        end_time = request.form.get("end_time")
+        company = request.form.get("company")
+        company_other = request.form.get("company_other").strip() if request.form.get("company_other") else ""
+        if company == "OTHER" and company_other:
+            company = company_other
 
-        if company == "OTHER" and other_company:
-            company = other_company
-        if booking_source == "OTHER" and other_booking_source:
-            booking_source = other_booking_source
+        town = request.form.get("town")
+        postcode = request.form.get("postcode")
+        booking_source = request.form.get("booking_source")
+        booking_source_other = request.form.get("booking_source_other").strip() if request.form.get("booking_source_other") else ""
+        if booking_source == "OTHER" and booking_source_other:
+            booking_source = booking_source_other
 
-        conn.execute('''
-            UPDATE shifts
-            SET shift_date = ?, start_time = ?, end_time = ?, company = ?, town = ?, postcode = ?, booking_source = ?, rate = ?
-            WHERE id = ? AND user_id = ?
-        ''', (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, id, current_user.id))
+        rate = request.form.get("rate")
+        status = request.form.get("status")
+
+        # --- Validation Rule ---
+        if company == "VISION EXPRESS" and booking_source != "VISION EXPRESS":
+            flash("For VISION EXPRESS company, the booking source must also be VISION EXPRESS.", "danger")
+            conn.close()
+            return redirect(url_for("edit", shift_id=shift_id))
+        if booking_source == "VISION EXPRESS" and company != "VISION EXPRESS":
+            flash("For VISION EXPRESS booking source, the company must also be VISION EXPRESS.", "danger")
+            conn.close()
+            return redirect(url_for("edit", shift_id=shift_id))
+        # -----------------------
+
+        conn.execute(
+            "UPDATE shifts SET shift_date = ?, start_time = ?, end_time = ?, company = ?, town = ?, postcode = ?, booking_source = ?, rate = ?, status = ? WHERE id = ? AND user_id = ?",
+            (shift_date, start_time, end_time, company, town, postcode, booking_source, rate, status, shift_id, current_user.id)
+        )
         conn.commit()
         conn.close()
-        return redirect(url_for('index'))
-
+        flash("Shift updated successfully!", "success")
+        return redirect(url_for("view_shift", shift_id=shift_id))
     conn.close()
-    return render_template('edit.html', shift=shift)
+    return render_template("edit.html", shift=shift)
 
 @app.route('/delete/<int:shift_id>', methods=["POST"])
 @login_required
@@ -573,16 +593,16 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
-    # Clear any existing flash messages from the session
-    session.pop('_flashes', None)
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('login'))
+    logout_user()  # Provided by Flask-Login
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
 
 
 @app.route('/register', methods=('GET', 'POST'))
 def register():
     if request.method == 'POST':
+        # Retrieve fields from the form
+        goc_number = request.form['goc_number']
         first_name = request.form['first_name']
         surname = request.form['surname']
         username = request.form['username']
@@ -596,15 +616,16 @@ def register():
         postcode = request.form['postcode']
         password = request.form['password']
         hashed_password = generate_password_hash(password)
-
-        conn = get_db_connection()
         
+        conn = get_db_connection()
         try:
             conn.execute("""
                 INSERT INTO users 
-                (first_name, surname, username, email, phone_number, address_line1, address_line2, city, county, country, postcode, password_hash) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (first_name, surname, username, email, phone_number, address_line1, address_line2, city, county, country, postcode, hashed_password))
+                (goc_number, first_name, surname, username, email, phone_number, 
+                 address_line1, address_line2, city, county, country, postcode, password_hash) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (goc_number, first_name, surname, username, email, phone_number, 
+                  address_line1, address_line2, city, county, country, postcode, hashed_password))
             conn.commit()
             flash('Registration successful! You can now log in.', 'success')
             return redirect(url_for('login'))
@@ -613,37 +634,85 @@ def register():
         except sqlite3.OperationalError as e:
             flash(f'Database error: {e}', 'danger')
         finally:
-            conn.close()  # Ensures connection closes, preventing database locks
-
+            conn.close()
     return render_template('register.html')
 
-@app.route('/profile', methods=('GET', 'POST'))
+from flask import jsonify, request
+from flask_login import login_required, current_user
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup
+
+@app.route('/fetch_goc_details', methods=['GET'])
+def fetch_goc_details():
+    goc_number = request.args.get('goc_number', '').strip()
+    if not goc_number:
+        return jsonify({'error': 'No GOC number provided'}), 400
+
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+    # You may need to specify the path to your chromedriver if it isn't in your PATH.
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.get("https://str.optical.org/")
+        # Wait for the input field to be present
+        wait = WebDriverWait(driver, 10)
+        input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
+        input_field.clear()
+        input_field.send_keys(goc_number)
+        input_field.send_keys(Keys.RETURN)
+
+        # Instead of sleeping, wait until the element with the title-font appears
+        element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
+        text = element.text.strip()  # e.g., "Yaseen Hussain (01-42605)"
+        if '(' in text:
+            name_part = text.split('(')[0].strip()
+        else:
+            name_part = text
+        names = name_part.split()
+        if len(names) >= 2:
+            first_name = names[0]
+            last_name = " ".join(names[1:])
+            return jsonify({'first_name': first_name, 'last_name': last_name})
+        else:
+            return jsonify({'error': 'Name format not recognized'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        driver.quit()
+
+
+@app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     if request.method == 'POST':
-        first_name = request.form['first_name']
-        surname = request.form['surname']
-        email = request.form['email']
-        phone_number = request.form['phone_number']
-        address_line1 = request.form['address_line1']
-        address_line2 = request.form.get('address_line2', '')
-        city = request.form['city']
-        county = request.form.get('county', '')
-        country = request.form['country']
-        postcode = request.form['postcode']
+        goc_number = request.form.get("goc_number")
+        first_name = request.form.get("first_name")
+        surname = request.form.get("surname")
+        email = request.form.get("email")
+        phone_number = request.form.get("phone_number")
+        address_line1 = request.form.get("address_line1")
+        address_line2 = request.form.get("address_line2", "")
+        city = request.form.get("city")
+        county = request.form.get("county", "")
+        country = request.form.get("country")
+        postcode = request.form.get("postcode")
 
         conn = get_db_connection()
         try:
-            # Update user information in the database
             conn.execute("""
                 UPDATE users 
-                SET first_name = ?, surname = ?, email = ?, phone_number = ?, 
-                    address_line1 = ?, address_line2 = ?, city = ?, county = ?, country = ?, postcode = ?
+                SET first_name = ?, surname = ?, email = ?, phone_number = ?,
+                    address_line1 = ?, address_line2 = ?, city = ?, county = ?, country = ?, postcode = ?, goc_number = ?
                 WHERE id = ?
-            """, (first_name, surname, email, phone_number, address_line1, address_line2, city, county, country, postcode, current_user.id))
+            """, (first_name, surname, email, phone_number, address_line1, address_line2, city, county, country, postcode, goc_number, current_user.id))
             conn.commit()
             
-            # Refresh current_user session data
             user = conn.execute("SELECT * FROM users WHERE id = ?", (current_user.id,)).fetchone()
             if user:
                 current_user.first_name = user['first_name']
@@ -656,79 +725,20 @@ def profile():
                 current_user.county = user['county']
                 current_user.country = user['country']
                 current_user.postcode = user['postcode']
+                current_user.goc_number = user['goc_number']
             
             flash('Profile updated successfully!', 'success')
         except sqlite3.OperationalError as e:
             flash(f'Database error: {e}', 'danger')
         finally:
             conn.close()
-
-        return redirect(url_for('index'))  # Redirect to home page after updating
-
-    return render_template('profile.html')
-
-    if request.method == 'POST':
-        first_name = request.form['first_name']
-        surname = request.form['surname']
-        email = request.form['email']
-        phone_number = request.form['phone_number']
-        address_line1 = request.form['address_line1']
-        address_line2 = request.form.get('address_line2', '')
-        city = request.form['city']
-        county = request.form.get('county', '')
-        country = request.form['country']
-        postcode = request.form['postcode']
-
-        conn = get_db_connection()
-        try:
-            conn.execute("""
-                UPDATE users 
-                SET first_name = ?, surname = ?, email = ?, phone_number = ?, 
-                    address_line1 = ?, address_line2 = ?, city = ?, county = ?, country = ?, postcode = ?
-                WHERE id = ?
-            """, (first_name, surname, email, phone_number, address_line1, address_line2, city, county, country, postcode, current_user.id))
-            conn.commit()
-            flash('Profile updated successfully!', 'success')
-        except sqlite3.OperationalError as e:
-            flash(f'Database error: {e}', 'danger')
-        finally:
-            conn.close()
-
+        
         return redirect(url_for('profile'))
+    
+    return render_template('profile.html', user=current_user)
 
-    return render_template('profile.html')
-
-    if request.method == 'POST':
-        first_name = request.form['first_name']
-        surname = request.form['surname']
-        email = request.form['email']
-        phone_number = request.form['phone_number']
-        address_line1 = request.form['address_line1']
-        address_line2 = request.form.get('address_line2', '')
-        city = request.form['city']
-        county = request.form.get('county', '')
-        country = request.form['country']
-        postcode = request.form['postcode']
-
-        conn = get_db_connection()
-        try:
-            conn.execute("""
-                UPDATE users 
-                SET first_name = ?, surname = ?, email = ?, phone_number = ?, 
-                    address_line1 = ?, address_line2 = ?, city = ?, county = ?, country = ?, postcode = ?
-                WHERE id = ?
-            """, (first_name, surname, email, phone_number, address_line1, address_line2, city, county, country, postcode, current_user.id))
-            conn.commit()
-            flash('Profile updated successfully!', 'success')
-        except sqlite3.OperationalError as e:
-            flash(f'Database error: {e}', 'danger')
-        finally:
-            conn.close()
-
-        return redirect(url_for('profile'))
-
-    return render_template('profile.html')
-
+if __name__ == '__main__':
+    app.run(debug=True)
 
 @app.route('/reset_password', methods=('GET', 'POST'))
 def reset_password():

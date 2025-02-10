@@ -1,99 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Edit Profile</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edit Profile</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script>
+    // Function to fetch GOC details when the user clicks "Lookup"
+    function fetchGOCDetailsWithSpinner() {
+      const spinner = document.getElementById('loadingSpinner');
+      spinner.style.display = 'inline-block'; // Show spinner
+      const gocNumber = document.getElementById('gocNumber').value.trim();
+      if (!gocNumber) {
+        spinner.style.display = 'none';
+        return;
+      }
+      
+      fetch(`/fetch_goc_details?goc_number=${encodeURIComponent(gocNumber)}`)
+        .then(response => {
+          spinner.style.display = 'none'; // Hide spinner immediately on response
+          if (!response.ok) {
+            throw new Error('GOC number not found or an error occurred.');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.first_name && data.last_name) {
+            document.getElementById('firstName').value = data.first_name;
+            document.getElementById('lastName').value = data.last_name;
+          } else {
+            alert('GOC number not found or invalid.');
+          }
+        })
+        .catch(error => {
+          spinner.style.display = 'none';
+          console.error('Error fetching GOC details:', error);
+          alert('Error fetching GOC details. Please try again later.');
+        });
+    }
+  </script>
 </head>
 <body class="container mt-4">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-        <div class="container-fluid">
-            <span class="navbar-text">Hello, <strong>{{ current_user.first_name }}</strong>! 👋</span>
-            <a href="/logout" class="btn btn-danger ms-auto">Logout</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </nav>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2 class="text-center">Edit Profile</h2>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} text-center">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <form method="post" class="card p-4 shadow-lg">
-                <div class="mb-3">
-                    <label class="form-label">First Name:</label>
-                    <input type="text" name="first_name" value="{{ current_user.first_name }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Surname:</label>
-                    <input type="text" name="surname" value="{{ current_user.surname }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Email:</label>
-                    <input type="email" name="email" value="{{ current_user.email }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Phone Number:</label>
-                    <input type="text" name="phone_number" value="{{ current_user.phone_number }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Address Line 1:</label>
-                    <input type="text" name="address_line1" value="{{ current_user.address_line1 }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Address Line 2 (Optional):</label>
-                    <input type="text" name="address_line2" value="{{ current_user.address_line2 }}" class="form-control">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">City/Town:</label>
-                    <input type="text" name="city" value="{{ current_user.city }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">County (Optional):</label>
-                    <input type="text" name="county" value="{{ current_user.county }}" class="form-control">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Country:</label>
-                    <input type="text" name="country" value="{{ current_user.country }}" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Postcode:</label>
-                    <input type="text" name="postcode" value="{{ current_user.postcode }}" class="form-control" required>
-                </div>
-
-                <!-- Cancel and Update Buttons -->
-                <div class="d-flex justify-content-between">
-                    <a href="/" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Update Profile</button>
-                </div>
-            </form>
-        </div>
+  <h3 class="text-center mb-4">Edit Profile</h3>
+  <form action="/profile" method="post">
+    <!-- GOC Number Field with Lookup Button and Spinner -->
+    <div class="mb-3">
+      <label for="gocNumber" class="form-label">GOC Number</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="gocNumber" name="goc_number" placeholder="Enter your GOC number">
+        <button type="button" class="btn btn-outline-secondary" onclick="fetchGOCDetailsWithSpinner()">Lookup</button>
+      </div>
+      <!-- Spinner (hidden by default) -->
+      <div id="loadingSpinner" class="spinner-border text-primary mt-2" role="status" style="display: none;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div class="form-text">Enter your GOC number and click "Lookup" to auto-fill your first and last name.</div>
+    </div>
+    
+    <!-- First Name Field -->
+    <div class="mb-3">
+      <label for="firstName" class="form-label">First Name</label>
+      <input type="text" class="form-control" id="firstName" name="first_name" value="{{ user.first_name }}">
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Footer -->
-<footer class="bg-light text-center text-muted mt-5 py-3">
-    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
-</footer>
+    <!-- Last Name Field -->
+    <div class="mb-3">
+      <label for="lastName" class="form-label">Last Name</label>
+      <input type="text" class="form-control" id="lastName" name="surname" value="{{ user.surname }}">
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Email Address Field -->
+    <div class="mb-3">
+      <label for="email" class="form-label">Email Address</label>
+      <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+    </div>
+
+    <!-- Phone Number Field -->
+    <div class="mb-3">
+      <label for="phoneNumber" class="form-label">Phone Number</label>
+      <input type="tel" class="form-control" id="phoneNumber" name="phone_number" value="{{ user.phone_number }}">
+    </div>
+
+    <!-- Address Line 1 Field -->
+    <div class="mb-3">
+      <label for="addressLine1" class="form-label">Address Line 1</label>
+      <input type="text" class="form-control" id="addressLine1" name="address_line1" value="{{ user.address_line1 }}">
+    </div>
+
+    <!-- Address Line 2 Field -->
+    <div class="mb-3">
+      <label for="addressLine2" class="form-label">Address Line 2</label>
+      <input type="text" class="form-control" id="addressLine2" name="address_line2" value="{{ user.address_line2 }}">
+    </div>
+
+    <!-- City / Town Field -->
+    <div class="mb-3">
+      <label for="city" class="form-label">City/Town</label>
+      <input type="text" class="form-control" id="city" name="city" value="{{ user.city }}">
+    </div>
+
+    <!-- County Field -->
+    <div class="mb-3">
+      <label for="county" class="form-label">County</label>
+      <input type="text" class="form-control" id="county" name="county" value="{{ user.county }}">
+    </div>
+
+    <!-- Country Field (Dropdown with United Kingdom first) -->
+    <div class="mb-3">
+      <label for="country" class="form-label">Country</label>
+      <select class="form-select" id="country" name="country">
+        <option value="United Kingdom" {% if user.country == 'United Kingdom' %}selected{% endif %}>United Kingdom</option>
+        <!-- Add other countries as needed -->
+        <option value="USA" {% if user.country == 'USA' %}selected{% endif %}>USA</option>
+        <option value="Canada" {% if user.country == 'Canada' %}selected{% endif %}>Canada</option>
+        <option value="Australia" {% if user.country == 'Australia' %}selected{% endif %}>Australia</option>
+      </select>
+    </div>
+
+    <!-- Postcode Field -->
+    <div class="mb-3">
+      <label for="postcode" class="form-label">Postcode</label>
+      <input type="text" class="form-control" id="postcode" name="postcode" value="{{ user.postcode }}">
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Update Profile</button>
+  </form>
+
+  <div class="text-center mt-3">
+    <a href="/" class="btn btn-secondary">Back to Home</a>
+  </div>
+
+  <footer class="bg-light text-center text-muted mt-5 py-3">
+    <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
+  </footer>
+
+  <!-- Bootstrap JS Bundle (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
