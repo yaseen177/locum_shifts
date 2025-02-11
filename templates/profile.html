@@ -7,34 +7,66 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script>
-    // Function to fetch GOC details when the user clicks "Lookup"
-    function fetchGOCDetailsWithSpinner() {
-      const spinner = document.getElementById('loadingSpinner');
-      spinner.style.display = 'inline-block'; // Show spinner
+    let progressInterval;
+    // Start the progress bar animation
+    function startProgressBar() {
+      const progressBarContainer = document.getElementById('progressBarContainer');
+      const progressBar = document.getElementById('progressBar');
+      progressBarContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      progressBar.innerText = '0%';
+      let progress = 0;
+      // Increase progress gradually (simulate progress until fetch completes)
+      progressInterval = setInterval(() => {
+        if (progress < 90) {  // Cap at 90% until lookup completes
+          progress += Math.floor(Math.random() * 5) + 1;
+          if (progress > 90) progress = 90;
+          progressBar.style.width = progress + '%';
+          progressBar.innerText = progress + '%';
+        }
+      }, 200);
+    }
+    
+    // Complete the progress bar and hide it
+    function completeProgressBar() {
+      clearInterval(progressInterval);
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = '100%';
+      progressBar.innerText = '100%';
+      setTimeout(() => {
+        document.getElementById('progressBarContainer').style.display = 'none';
+      }, 500);
+    }
+    
+    // Function to fetch GOC details on clicking the Lookup button
+    function fetchGOCDetailsForEdit() {
+      startProgressBar();
       const gocNumber = document.getElementById('gocNumber').value.trim();
       if (!gocNumber) {
-        spinner.style.display = 'none';
+        clearInterval(progressInterval);
+        document.getElementById('progressBarContainer').style.display = 'none';
         return;
       }
       
       fetch(`/fetch_goc_details?goc_number=${encodeURIComponent(gocNumber)}`)
         .then(response => {
-          spinner.style.display = 'none'; // Hide spinner immediately on response
           if (!response.ok) {
-            throw new Error('GOC number not found or an error occurred.');
+            throw new Error('GOC number not found or error occurred.');
           }
           return response.json();
         })
         .then(data => {
+          completeProgressBar();
           if (data.first_name && data.last_name) {
             document.getElementById('firstName').value = data.first_name;
-            document.getElementById('lastName').value = data.last_name;
+            document.getElementById('surname').value = data.last_name;
           } else {
             alert('GOC number not found or invalid.');
           }
         })
         .catch(error => {
-          spinner.style.display = 'none';
+          clearInterval(progressInterval);
+          document.getElementById('progressBarContainer').style.display = 'none';
           console.error('Error fetching GOC details:', error);
           alert('Error fetching GOC details. Please try again later.');
         });
@@ -42,94 +74,95 @@
   </script>
 </head>
 <body class="container mt-4">
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-
   <h3 class="text-center mb-4">Edit Profile</h3>
+  <!-- Flash messages (optional) -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
   <form action="/profile" method="post">
-    <!-- GOC Number Field with Lookup Button and Spinner -->
+    <!-- GOC Number Field with Lookup Button and Progress Bar -->
     <div class="mb-3">
       <label for="gocNumber" class="form-label">GOC Number</label>
       <div class="input-group">
-        <input type="text" class="form-control" id="gocNumber" name="goc_number" placeholder="Enter your GOC number">
-        <button type="button" class="btn btn-outline-secondary" onclick="fetchGOCDetailsWithSpinner()">Lookup</button>
+        <input type="text" class="form-control" id="gocNumber" name="goc_number" placeholder="Enter your GOC number" value="{{ user.goc_number }}">
+        <button type="button" class="btn btn-outline-secondary" onclick="fetchGOCDetailsForEdit()">Lookup</button>
       </div>
-      <!-- Spinner (hidden by default) -->
-      <div id="loadingSpinner" class="spinner-border text-primary mt-2" role="status" style="display: none;">
-        <span class="visually-hidden">Loading...</span>
+      <!-- Progress Bar (hidden by default) -->
+      <div id="progressBarContainer" class="mb-2" style="display: none;">
+        <div class="progress">
+          <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
       </div>
-      <div class="form-text">Enter your GOC number and click "Lookup" to auto-fill your first and last name.</div>
+      <div class="form-text">Click "Lookup" to auto-fill your first name and surname based on your GOC number.</div>
     </div>
     
-    <!-- First Name Field -->
+    <!-- First Name Field (read-only, auto-filled, greyed out) -->
     <div class="mb-3">
       <label for="firstName" class="form-label">First Name</label>
-      <input type="text" class="form-control" id="firstName" name="first_name" value="{{ user.first_name }}">
+      <input type="text" class="form-control" id="firstName" name="first_name" value="{{ user.first_name }}" readonly style="background-color: #e9ecef;">
     </div>
-
-    <!-- Last Name Field -->
+    
+    <!-- Surname Field (read-only, auto-filled, greyed out) -->
     <div class="mb-3">
-      <label for="lastName" class="form-label">Last Name</label>
-      <input type="text" class="form-control" id="lastName" name="surname" value="{{ user.surname }}">
+      <label for="surname" class="form-label">Surname</label>
+      <input type="text" class="form-control" id="surname" name="surname" value="{{ user.surname }}" readonly style="background-color: #e9ecef;">
     </div>
-
+    
     <!-- Email Address Field -->
     <div class="mb-3">
       <label for="email" class="form-label">Email Address</label>
       <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
     </div>
-
+    
     <!-- Phone Number Field -->
     <div class="mb-3">
       <label for="phoneNumber" class="form-label">Phone Number</label>
       <input type="tel" class="form-control" id="phoneNumber" name="phone_number" value="{{ user.phone_number }}">
     </div>
-
+    
     <!-- Address Line 1 Field -->
     <div class="mb-3">
       <label for="addressLine1" class="form-label">Address Line 1</label>
       <input type="text" class="form-control" id="addressLine1" name="address_line1" value="{{ user.address_line1 }}">
     </div>
-
+    
     <!-- Address Line 2 Field -->
     <div class="mb-3">
-      <label for="addressLine2" class="form-label">Address Line 2</label>
+      <label for="addressLine2" class="form-label">Address Line 2 (optional)</label>
       <input type="text" class="form-control" id="addressLine2" name="address_line2" value="{{ user.address_line2 }}">
     </div>
-
-    <!-- City / Town Field -->
+    
+    <!-- City/Town Field -->
     <div class="mb-3">
       <label for="city" class="form-label">City/Town</label>
       <input type="text" class="form-control" id="city" name="city" value="{{ user.city }}">
     </div>
-
+    
     <!-- County Field -->
     <div class="mb-3">
       <label for="county" class="form-label">County</label>
       <input type="text" class="form-control" id="county" name="county" value="{{ user.county }}">
     </div>
-
+    
     <!-- Country Field (Dropdown with United Kingdom first) -->
     <div class="mb-3">
       <label for="country" class="form-label">Country</label>
       <select class="form-select" id="country" name="country">
         <option value="United Kingdom" {% if user.country == 'United Kingdom' %}selected{% endif %}>United Kingdom</option>
-        <!-- Add other countries as needed -->
         <option value="USA" {% if user.country == 'USA' %}selected{% endif %}>USA</option>
         <option value="Canada" {% if user.country == 'Canada' %}selected{% endif %}>Canada</option>
         <option value="Australia" {% if user.country == 'Australia' %}selected{% endif %}>Australia</option>
       </select>
     </div>
-
+    
     <!-- Postcode Field -->
     <div class="mb-3">
       <label for="postcode" class="form-label">Postcode</label>
@@ -138,16 +171,16 @@
     
     <button type="submit" class="btn btn-primary">Update Profile</button>
   </form>
-
+  
   <div class="text-center mt-3">
     <a href="/" class="btn btn-secondary">Back to Home</a>
   </div>
-
+  
   <footer class="bg-light text-center text-muted mt-5 py-3">
     <p>Created by <strong>Yaseen Hussain BSc (Hons) MCOptom MBCLA Prof Cert Med Ret</strong></p>
   </footer>
-
-  <!-- Bootstrap JS Bundle (includes Popper) -->
+  
+  <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

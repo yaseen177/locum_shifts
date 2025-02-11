@@ -638,7 +638,7 @@ def register():
     return render_template('register.html')
 
 from flask import jsonify, request
-from flask_login import login_required, current_user
+from flask_login import login_required
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -653,23 +653,54 @@ def fetch_goc_details():
     if not goc_number:
         return jsonify({'error': 'No GOC number provided'}), 400
 
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    # You may need to specify the path to your chromedriver if it isn't in your PATH.
-    driver = webdriver.Chrome(options=options)
-    try:
+    def get_details():
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        # Disable image loading to speed up page load
+        prefs = {"profile.managed_default_content_settings.images": 2}
+        options.add_experimental_option("prefs", prefs)
+        
+        # Create the browser instance (adjust executablePath if needed)
+        driver = webdriver.Chrome(options=options)
+        
+        # Navigate to the search page
         driver.get("https://str.optical.org/")
-        # Wait for the input field to be present
         wait = WebDriverWait(driver, 10)
-        input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
+        try:
+            # Wait until the GOC number input is present
+            input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
+        except Exception as e:
+            driver.quit()
+            return None, f"Timeout waiting for input field: {e}"
+        
         input_field.clear()
         input_field.send_keys(goc_number)
         input_field.send_keys(Keys.RETURN)
+        
+        try:
+            # Wait until the element containing the registrant's name is present
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
+        except Exception as e:
+            driver.quit()
+            return None, f"Timeout waiting for results: {e}"
+        
+        content = driver.page_source
+        driver.quit()
+        return content, None
 
-        # Instead of sleeping, wait until the element with the title-font appears
-        element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
-        text = element.text.strip()  # e.g., "Yaseen Hussain (01-42605)"
+    content, error = get_details()
+    if error or not content:
+        return jsonify({'error': error or 'Failed to fetch content'}), 500
+
+    # Parse the fetched page content
+    soup = BeautifulSoup(content, 'html.parser')
+    element = soup.find('strong', class_="mt-0 mb-1 title-font")
+    if element:
+        text = element.get_text(strip=True)  # e.g., "Yaseen Hussain (01-42605)"
+        # Remove the portion in parentheses if present
         if '(' in text:
             name_part = text.split('(')[0].strip()
         else:
@@ -681,10 +712,9 @@ def fetch_goc_details():
             return jsonify({'first_name': first_name, 'last_name': last_name})
         else:
             return jsonify({'error': 'Name format not recognized'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        driver.quit()
+    else:
+        return jsonify({'error': 'GOC number not found'}), 404
+
 
 
 @app.route('/profile', methods=['GET', 'POST'])
