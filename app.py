@@ -655,22 +655,35 @@ def fetch_goc_details():
 
     def get_details():
         options = Options()
-        options.add_argument("--headless")
+        # Use the new headless mode if available
+        options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        # Disable image loading to speed up page load
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-infobars")
+        # Disable images to speed up loading
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
-        # Use a unique user data directory to avoid conflicts
+        # Specify a unique user-data-dir to avoid conflicts
         options.add_argument("--user-data-dir=/tmp/chrome-user-data")
         
-        driver = webdriver.Chrome(options=options)
+        # Create the Chrome driver
+        try:
+            driver = webdriver.Chrome(options=options)
+        except Exception as e:
+            return None, f"Error creating WebDriver: {e}"
         
-        driver.get("https://str.optical.org/")
+        try:
+            driver.set_page_load_timeout(15)
+            driver.get("https://str.optical.org/")
+        except Exception as e:
+            driver.quit()
+            return None, f"Error loading page: {e}"
+        
         wait = WebDriverWait(driver, 10)
         try:
-            # Wait until the GOC number input field appears
+            # Wait for the input field to be present
             input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
         except Exception as e:
             driver.quit()
@@ -681,7 +694,7 @@ def fetch_goc_details():
         input_field.send_keys(Keys.RETURN)
         
         try:
-            # Wait until the element with the registrant’s name appears
+            # Wait for the element with the registrant’s name to appear
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
         except Exception as e:
             driver.quit()
@@ -712,7 +725,6 @@ def fetch_goc_details():
             return jsonify({'error': 'Name format not recognized'}), 500
     else:
         return jsonify({'error': 'GOC number not found'}), 404
-
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
