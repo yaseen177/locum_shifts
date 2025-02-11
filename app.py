@@ -662,15 +662,15 @@ def fetch_goc_details():
         # Disable image loading to speed up page load
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
+        # Use a unique user data directory to avoid conflicts
+        options.add_argument("--user-data-dir=/tmp/chrome-user-data")
         
-        # Create the browser instance (adjust executablePath if needed)
         driver = webdriver.Chrome(options=options)
         
-        # Navigate to the search page
         driver.get("https://str.optical.org/")
         wait = WebDriverWait(driver, 10)
         try:
-            # Wait until the GOC number input is present
+            # Wait until the GOC number input field appears
             input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
         except Exception as e:
             driver.quit()
@@ -681,7 +681,7 @@ def fetch_goc_details():
         input_field.send_keys(Keys.RETURN)
         
         try:
-            # Wait until the element containing the registrant's name is present
+            # Wait until the element with the registrant’s name appears
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
         except Exception as e:
             driver.quit()
@@ -695,12 +695,10 @@ def fetch_goc_details():
     if error or not content:
         return jsonify({'error': error or 'Failed to fetch content'}), 500
 
-    # Parse the fetched page content
     soup = BeautifulSoup(content, 'html.parser')
     element = soup.find('strong', class_="mt-0 mb-1 title-font")
     if element:
         text = element.get_text(strip=True)  # e.g., "Yaseen Hussain (01-42605)"
-        # Remove the portion in parentheses if present
         if '(' in text:
             name_part = text.split('(')[0].strip()
         else:
@@ -714,7 +712,6 @@ def fetch_goc_details():
             return jsonify({'error': 'Name format not recognized'}), 500
     else:
         return jsonify({'error': 'GOC number not found'}), 404
-
 
 
 @app.route('/profile', methods=['GET', 'POST'])
