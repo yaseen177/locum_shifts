@@ -655,7 +655,7 @@ def fetch_goc_details():
 
     def get_details():
         options = Options()
-        # Use the new headless mode if available
+        # Use Chrome’s newer headless mode if available
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
@@ -665,25 +665,24 @@ def fetch_goc_details():
         # Disable images to speed up loading
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
-        # Specify a unique user-data-dir to avoid conflicts
+        # Specify a unique user data directory to avoid conflicts
         options.add_argument("--user-data-dir=/tmp/chrome-user-data")
         
-        # Create the Chrome driver
         try:
             driver = webdriver.Chrome(options=options)
         except Exception as e:
             return None, f"Error creating WebDriver: {e}"
         
         try:
-            driver.set_page_load_timeout(15)
+            driver.set_page_load_timeout(25)
             driver.get("https://str.optical.org/")
         except Exception as e:
             driver.quit()
             return None, f"Error loading page: {e}"
         
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 25)
         try:
-            # Wait for the input field to be present
+            # Wait for the GOC number input field to be present
             input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
         except Exception as e:
             driver.quit()
@@ -694,7 +693,7 @@ def fetch_goc_details():
         input_field.send_keys(Keys.RETURN)
         
         try:
-            # Wait for the element with the registrant’s name to appear
+            # Wait for the element containing the registrant's name to appear
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
         except Exception as e:
             driver.quit()
