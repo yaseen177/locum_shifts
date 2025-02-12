@@ -655,17 +655,16 @@ def fetch_goc_details():
 
     def get_details():
         options = Options()
-        # Use Chrome’s newer headless mode if available
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
-        # Disable images to speed up loading
+        options.add_argument("--incognito")
+        options.add_argument("--disable-logging")
         prefs = {"profile.managed_default_content_settings.images": 2}
         options.add_experimental_option("prefs", prefs)
-        # Specify a unique user data directory to avoid conflicts
         options.add_argument("--user-data-dir=/tmp/chrome-user-data")
         
         try:
@@ -682,7 +681,6 @@ def fetch_goc_details():
         
         wait = WebDriverWait(driver, 25)
         try:
-            # Wait for the GOC number input field to be present
             input_field = wait.until(EC.presence_of_element_located((By.ID, "Registrant-Pin-input")))
         except Exception as e:
             driver.quit()
@@ -693,7 +691,6 @@ def fetch_goc_details():
         input_field.send_keys(Keys.RETURN)
         
         try:
-            # Wait for the element containing the registrant's name to appear
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "strong.mt-0.mb-1.title-font")))
         except Exception as e:
             driver.quit()
@@ -708,9 +705,9 @@ def fetch_goc_details():
         return jsonify({'error': error or 'Failed to fetch content'}), 500
 
     soup = BeautifulSoup(content, 'html.parser')
-    element = soup.find('strong', class_="mt-0 mb-1 title-font")
+    element = soup.find('strong', class_="mt-0 mb-1.title-font")
     if element:
-        text = element.get_text(strip=True)  # e.g., "Yaseen Hussain (01-42605)"
+        text = element.get_text(strip=True)
         if '(' in text:
             name_part = text.split('(')[0].strip()
         else:
